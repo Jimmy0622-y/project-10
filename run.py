@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
-from models import TradeManager
-from utils import generate_advice
+from app.models import TradeManager
+from app.utils import generate_advice
 
 app = Flask(__name__)
 manager = TradeManager()
