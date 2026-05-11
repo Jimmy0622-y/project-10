@@ -26,11 +26,23 @@ class StockAnalyzer:
 
         df.reset_index(inplace=True)
 
-        # 技術指標
-        df["SMA5"] = SMAIndicator(close=df["Close"], window=5).sma_indicator()
-        df["SMA20"] = SMAIndicator(close=df["Close"], window=20).sma_indicator()
+        close_price = df["Close"].squeeze()
 
-        rsi = RSIIndicator(close=df["Close"], window=14)
+        # 技術指標
+        df["SMA5"] = SMAIndicator(
+        close=close_price,
+        window=5
+        ).sma_indicator()
+
+        df["SMA20"] = SMAIndicator(
+        close=close_price,
+        window=20
+        ).sma_indicator()
+
+        rsi = RSIIndicator(
+        close=close_price,
+        window=14
+        )
         df["RSI"] = rsi.rsi()
 
         self.data = df
