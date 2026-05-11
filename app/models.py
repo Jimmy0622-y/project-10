@@ -1,45 +1,50 @@
-class TradeManager:
+import pandas as pd
+import yfinance as yf
+from ta.trend import SMAIndicator
+from ta.momentum import RSIIndicator
+
+
+class StockAnalyzer:
     def __init__(self):
-        self.prices = []
-        self.trades = []
-        self.position = None
+        self.data = None
 
-    def add_price(self, price):
-        self.prices.append(price)
+    def fetch_stock_data(self, symbol, period="1y"):
+        """
+        抓取股票歷史資料
+        """
 
-        if len(self.prices) < 20:
-            return
+        stock = yf.Ticker(symbol)
+        df = stock.history(period=period)
 
-        ma5 = sum(self.prices[-5:]) / 5
-        ma10 = sum(self.prices[-10:]) / 10
-        ma20 = sum(self.prices[-20:]) / 20
+        if df.empty:
+            return None
 
-        # 買進訊號（多頭排列）
-        if self.position is None and ma5 > ma10 > ma20:
-            self.position = price
-            self.trades.append(("BUY", price))
+        df.reset_index(inplace=True)
 
-        # 賣出訊號（空頭排列）
-        elif self.position is not None and ma5 < ma10 < ma20:
-            profit = round(price - self.position, 2)
-            self.trades.append(("SELL", price, profit))
-            self.position = None
+        # 技術指標
+        df["SMA5"] = SMAIndicator(close=df["Close"], window=5).sma_indicator()
+        df["SMA20"] = SMAIndicator(close=df["Close"], window=20).sma_indicator()
 
-    def get_statistics(self):
-        profits = [t[2] for t in self.trades if t[0] == "SELL"]
+        rsi = RSIIndicator(close=df["Close"], window=14)
+        df["RSI"] = rsi.rsi()
 
-        total = len(profits)
-        wins = sum(1 for p in profits if p > 0)
+        self.data = df
 
-        win_rate = round((wins / total) * 100, 2) if total else 0
+        return df
 
-        total_profit = sum(p for p in profits if p > 0)
-        total_loss = abs(sum(p for p in profits if p < 0))
+    def save_to_csv(self, filename="stock_data.csv"):
+        if self.data is not None:
+            self.data.to_csv(filename, index=False)
 
-        profit_ratio = round(total_profit / total_loss, 2) if total_loss > 0 else float('inf')
+    def get_latest_indicators(self):
+        if self.data is None:
+            return None
+
+        latest = self.data.iloc[-1]
 
         return {
-            "total": total,
-            "win_rate": win_rate,
-            "profit_ratio": profit_ratio
+            "close": round(latest["Close"], 2),
+            "sma5": round(latest["SMA5"], 2),
+            "sma20": round(latest["SMA20"], 2),
+            "rsi": round(latest["RSI"], 2)
         }

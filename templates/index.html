@@ -1,35 +1,68 @@
-"""
 <!DOCTYPE html>
-<html>
-<head>
-    <title>模擬股市系統</title>
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        .box {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+        }
+    </style>
 </head>
 <body>
-    <h1>📊 模擬股市交易系統（MA策略）</h1>
 
-    <form method="post">
-        輸入股價: <input type="number" step="0.01" name="price" required>
-        <input type="submit" value="新增資料">
+    <h1>股票歷史資料分析</h1>
+
+    <form method="POST">
+        <input type="text" name="symbol" placeholder="例如：2330.TW 或 AAPL" required>
+        <button type="submit">開始分析</button>
     </form>
 
-    <h2>📈 股價序列</h2>
-    <p>{{ prices }}</p>
+    <p>{{ message }}</p>
 
-    <h2>📊 交易紀錄</h2>
-    <ul>
-        {% for t in trades %}
-        <li>{{ t }}</li>
+    {% if indicators %}
+    <div class="box">
+        <h2>最新技術指標</h2>
+
+        <p>最新收盤價：{{ indicators.close }}</p>
+        <p>SMA5：{{ indicators.sma5 }}</p>
+        <p>SMA20：{{ indicators.sma20 }}</p>
+        <p>RSI：{{ indicators.rsi }}</p>
+    </div>
+    {% endif %}
+
+    {% if table_data %}
+    <h2>最近 10 筆資料</h2>
+
+    <table>
+        <tr>
+            <th>日期</th>
+            <th>收盤價</th>
+            <th>SMA5</th>
+            <th>SMA20</th>
+            <th>RSI</th>
+        </tr>
+
+        {% for row in table_data %}
+        <tr>
+            <td>{{ row.Date }}</td>
+            <td>{{ row.Close }}</td>
+            <td>{{ row.SMA5 }}</td>
+            <td>{{ row.SMA20 }}</td>
+            <td>{{ row.RSI }}</td>
+        </tr>
         {% endfor %}
-    </ul>
-
-    <h2>📊 統計</h2>
-    <p>交易次數: {{ stats.total }}</p>
-    <p>勝率: {{ stats.win_rate }}%</p>
-    <p>盈虧比: {{ stats.profit_ratio }}</p>
-
-    <h2>💡 投資建議</h2>
-    <p>{{ advice }}</p>
+    </table>
+    {% endif %}
 
 </body>
 </html>
-"""
