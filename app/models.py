@@ -13,8 +13,13 @@ class StockAnalyzer:
         抓取股票歷史資料
         """
 
-        stock = yf.Ticker(symbol)
-        df = stock.history(period=period)
+        # 使用 download 比較穩定
+        df = yf.download(
+            symbol,
+            period=period,
+            auto_adjust=True,
+            progress=False
+        )
 
         if df.empty:
             return None
