@@ -26,6 +26,10 @@ class StockAnalyzer:
 
         df.reset_index(inplace=True)
 
+        df.columns = [col[0] if isinstance(col, tuple) else col for col in df.columns]
+
+        df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+
         close_price = df["Close"].squeeze()
 
         # 技術指標
