@@ -5,12 +5,14 @@ app = Flask(__name__)
 
 analyzer = StockAnalyzer()
 
+
 @app.route("/", methods=["GET", "POST"])
 def index():
 
     indicators = None
     table_data = None
     chart_path = None
+    macd_chart = None
     message = ""
 
     if request.method == "POST":
@@ -27,7 +29,7 @@ def index():
 
             else:
 
-                # 存 CSV
+                # CSV
                 analyzer.save_to_csv(f"{symbol}.csv")
 
                 # 指標
@@ -36,10 +38,13 @@ def index():
                 # 表格
                 table_data = analyzer.get_table_data()
 
-                # K 線圖
+                # K線圖
                 chart_path = analyzer.generate_candlestick_chart(symbol)
 
-                message = f"{symbol} 資料抓取成功"
+                # MACD圖
+                macd_chart = analyzer.generate_macd_chart(symbol)
+
+                message = f"{symbol} 分析完成"
 
         except Exception as e:
 
@@ -50,6 +55,7 @@ def index():
         indicators=indicators,
         table_data=table_data,
         chart_path=chart_path,
+        macd_chart=macd_chart,
         message=message
     )
 

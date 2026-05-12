@@ -52,6 +52,12 @@
                     {{ indicators.rsi }}
                 </p>
             </div>
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-sm">
+                <p class="text-sm text-gray-400 mb-1">MACD</p>
+                <p class="text-2xl font-bold text-orange-400">
+                    {{ indicators.macd }}
+                </p>
+            </div>
         </div>
         {% endif %}
 
@@ -94,6 +100,15 @@
             <h2 class="text-2xl font-bold mb-4">K 線圖分析</h2>
 
             <img src="{{ url_for('static', filename=chart_path) }}"class="rounded-xl shadow-lg w-full">
+        </div>
+    {% endif %}
+
+    {% if macd_chart %}
+        <div class="bg-gray-800 rounded-xl border border-gray-700 p-6 mt-10">
+            <h2 class="text-2xl font-bold mb-4">MACD 技術分析</h2>
+
+            <img src="{{ url_for('static', filename=macd_chart) }}"
+                class="rounded-xl shadow-lg w-full">
         </div>
     {% endif %}
 
