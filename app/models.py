@@ -117,7 +117,7 @@ class StockAnalyzer:
         # 建立資料夾
         os.makedirs("app/static/charts", exist_ok=True)
 
-        filename = f"app/static/charts/{symbol}.png"
+        filename = os.path.join("app", "static", "charts", f"{symbol}.png")
 
         # K線圖
         mpf.plot(
