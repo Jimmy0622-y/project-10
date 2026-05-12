@@ -117,6 +117,9 @@ class StockAnalyzer:
         # 建立資料夾
         os.makedirs("app/static/charts", exist_ok=True)
 
+        # 修正檔名
+        safe_symbol = symbol.replace(".", "_")
+
         filename = os.path.join("app", "static", "charts", f"{symbol}.png")
 
         # K線圖
