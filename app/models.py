@@ -114,13 +114,16 @@ class StockAnalyzer:
         # 最近60天
         df = df.tail(60)
 
+        # 正確 static 路徑
+        chart_dir = os.path.join("static", "charts")
+
         # 建立資料夾
-        os.makedirs("app/static/charts", exist_ok=True)
+        os.makedirs(chart_dir, exist_ok=True)
 
         # 修正檔名
         safe_symbol = symbol.replace(".", "_")
 
-        filename = os.path.join("app", "static", "charts", f"{symbol}.png")
+        filename = os.path.join(chart_dir, f"{safe_symbol}.png")
 
         # K線圖
         mpf.plot(
@@ -128,10 +131,9 @@ class StockAnalyzer:
             type="candle",
             mav=(5, 20),
             volume=True,
-            style="yahoo",
-            title=f"{symbol} Candlestick Chart",
+            style="charles",
             figsize=(12, 8),
             savefig=filename
         )
 
-        return f"charts/{symbol}.png"
+        return f"charts/{safe_symbol}.png"
