@@ -5,40 +5,54 @@ app = Flask(__name__)
 
 analyzer = StockAnalyzer()
 
-
-@app.route('/', methods=['GET', 'POST'])
+@app.route("/", methods=["GET", "POST"])
 def index():
+
     indicators = None
     table_data = None
+    chart_path = None
     message = ""
 
-    if request.method == 'POST':
-        symbol = request.form['symbol']
+    if request.method == "POST":
+
+        symbol = request.form["symbol"]
 
         try:
+
             df = analyzer.fetch_stock_data(symbol)
 
-            if df is not None:
+            if df is None:
+
+                message = "抓不到股票資料"
+
+            else:
+
+                # 存 CSV
                 analyzer.save_to_csv(f"{symbol}.csv")
 
+                # 指標
                 indicators = analyzer.get_latest_indicators()
 
-                table_data = df.tail(10).to_dict(orient='records')
+                # 表格
+                table_data = analyzer.get_table_data()
 
-                message = f"成功抓取 {symbol} 歷史資料並儲存 CSV"
-            else:
-                message = "查無股票資料"
+                # K 線圖
+                chart_path = analyzer.generate_candlestick_chart(symbol)
+
+                message = f"{symbol} 資料抓取成功"
 
         except Exception as e:
+
             message = f"錯誤：{str(e)}"
 
     return render_template(
-        'index.html',
+        "index.html",
         indicators=indicators,
         table_data=table_data,
+        chart_path=chart_path,
         message=message
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
