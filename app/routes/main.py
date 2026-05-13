@@ -56,7 +56,3 @@ def index():
         message=message,
     )
 
-
-@main.route("/strategy")
-def strategy():
-    return render_template("strategy.html")
