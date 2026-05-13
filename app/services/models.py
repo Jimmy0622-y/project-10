@@ -230,3 +230,33 @@ class StockAnalyzer:
         plt.close()
 
         return f"charts/{safe_symbol}_macd.png"
+
+    def update_watchlist(self, watchlist):
+
+        results = []
+
+        for symbol in watchlist:
+
+            try:
+
+                print(f"更新：{symbol}")
+
+                self.fetch_stock_data(symbol)
+
+                self.generate_candlestick_chart(symbol)
+
+                self.generate_macd_chart(symbol)
+
+                results.append({
+                    "symbol": symbol,
+                    "status": "成功"
+                })
+
+            except Exception as e:
+
+                results.append({
+                    "symbol": symbol,
+                    "status": f"失敗：{str(e)}"
+                })
+
+        return results    

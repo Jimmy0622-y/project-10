@@ -1,11 +1,30 @@
 from flask import Blueprint, render_template, request
+
 from app.services.models import StockAnalyzer
+from app.watchlist import WATCHLIST
 
 main = Blueprint("main", __name__)
 
 analyzer = StockAnalyzer()
 
 
+# =========================
+# 一鍵更新股票清單
+# =========================
+@main.route("/update_all")
+def update_all():
+
+    results = analyzer.update_watchlist(WATCHLIST)
+
+    return render_template(
+        "update.html",
+        results=results
+    )
+
+
+# =========================
+# 首頁
+# =========================
 @main.route("/", methods=["GET", "POST"])
 def index():
 
@@ -55,4 +74,3 @@ def index():
         macd_chart=macd_chart,
         message=message,
     )
-
