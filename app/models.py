@@ -1,6 +1,9 @@
 import pandas as pd
 import yfinance as yf
 import mplfinance as mpf
+import matplotlib
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
 import os
 
@@ -92,7 +95,8 @@ class StockAnalyzer:
         df["MACD_HIST"] = macd.macd_diff()
 
         # 小數點
-        df = df.round(2)
+        numeric_cols = df.select_dtypes(include=["number"]).columns
+        df[numeric_cols] = df[numeric_cols].round(2)
 
         # 存入字典
         self.stock_data[symbol] = df
