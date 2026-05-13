@@ -72,15 +72,25 @@ class StockAnalyzer:
 
         return df
 
-    def save_to_csv(self, filename="stock_data.csv"):
+    def save_to_csv(self, symbol):
 
         if self.data is not None:
 
+            # 建立 csv 資料夾
+            os.makedirs("csv", exist_ok=True)
+
             save_df = self.data.copy()
 
+            # 日期格式
             save_df["Date"] = save_df["Date"].dt.strftime("%Y-%m-%d")
 
+            # 檔案路徑
+            filename = os.path.join("csv", f"{symbol}.csv")
+
+            # 儲存 CSV
             save_df.to_csv(filename, index=False)
+
+            return filename
 
     def get_latest_indicators(self):
 

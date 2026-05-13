@@ -30,7 +30,7 @@ def index():
             else:
 
                 # CSV
-                analyzer.save_to_csv(f"{symbol}.csv")
+                analyzer.save_to_csv(symbol)
 
                 # 指標
                 indicators = analyzer.get_latest_indicators()
