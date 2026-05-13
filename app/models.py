@@ -29,7 +29,7 @@ class StockAnalyzer:
 
             print(f"讀取本地資料：{csv_path}")
 
-            df = pd.read_csv(csv_path)
+            df = pd.read_csv(csv_path,parse_dates=["Date"])
 
             df["Date"] = pd.to_datetime(df["Date"])
 
