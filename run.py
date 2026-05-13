@@ -5,7 +5,6 @@ app = Flask(__name__)
 
 analyzer = StockAnalyzer()
 
-
 @app.route("/", methods=["GET", "POST"])
 def index():
 
@@ -29,19 +28,16 @@ def index():
 
             else:
 
-                # CSV
-                analyzer.save_to_csv(symbol)
-
-                # 指標
-                indicators = analyzer.get_latest_indicators()
+                # 技術指標
+                indicators = analyzer.get_latest_indicators(symbol)
 
                 # 表格
-                table_data = analyzer.get_table_data()
+                table_data = analyzer.get_table_data(symbol)
 
-                # K線圖
+                # K 線圖
                 chart_path = analyzer.generate_candlestick_chart(symbol)
 
-                # MACD圖
+                # MACD 圖
                 macd_chart = analyzer.generate_macd_chart(symbol)
 
                 message = f"{symbol} 分析完成"
@@ -58,7 +54,6 @@ def index():
         macd_chart=macd_chart,
         message=message
     )
-
 
 if __name__ == "__main__":
     app.run(debug=True)

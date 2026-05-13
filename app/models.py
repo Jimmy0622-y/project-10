@@ -8,13 +8,39 @@ from ta.trend import SMAIndicator
 from ta.momentum import RSIIndicator
 from ta.trend import MACD
 
-
 class StockAnalyzer:
 
     def __init__(self):
-        self.data = None
+
+        # 多股票資料
+        self.stock_data = {}
 
     def fetch_stock_data(self, symbol, period="1y"):
+
+        # 建立 csv 資料夾
+        os.makedirs("csv", exist_ok=True)
+
+        csv_path = os.path.join("csv", f"{symbol}.csv")
+
+        # =========================
+        # 本地已有 CSV
+        # =========================
+        if os.path.exists(csv_path):
+
+            print(f"讀取本地資料：{csv_path}")
+
+            df = pd.read_csv(csv_path)
+
+            df["Date"] = pd.to_datetime(df["Date"])
+
+            self.stock_data[symbol] = df
+
+            return df
+
+        # =========================
+        # Yahoo 下載
+        # =========================
+        print(f"下載 Yahoo 資料：{symbol}")
 
         df = yf.download(
             symbol,
@@ -37,7 +63,7 @@ class StockAnalyzer:
         # 日期格式
         df["Date"] = pd.to_datetime(df["Date"])
 
-        # 修正 yfinance 二維問題
+        # 修正二維問題
         close_price = df["Close"].squeeze()
 
         # SMA5
@@ -68,36 +94,35 @@ class StockAnalyzer:
         # 小數點
         df = df.round(2)
 
-        self.data = df
+        # 存入字典
+        self.stock_data[symbol] = df
+
+        # 自動存 CSV
+        self.save_to_csv(symbol)
 
         return df
 
     def save_to_csv(self, symbol):
 
-        if self.data is not None:
+        if symbol not in self.stock_data:
+            return
 
-            # 建立 csv 資料夾
-            os.makedirs("csv", exist_ok=True)
+        save_df = self.stock_data[symbol].copy()
 
-            save_df = self.data.copy()
+        save_df["Date"] = save_df["Date"].dt.strftime("%Y-%m-%d")
 
-            # 日期格式
-            save_df["Date"] = save_df["Date"].dt.strftime("%Y-%m-%d")
+        filename = os.path.join("csv", f"{symbol}.csv")
 
-            # 檔案路徑
-            filename = os.path.join("csv", f"{symbol}.csv")
+        save_df.to_csv(filename, index=False)
 
-            # 儲存 CSV
-            save_df.to_csv(filename, index=False)
+    def get_latest_indicators(self, symbol):
 
-            return filename
-
-    def get_latest_indicators(self):
-
-        if self.data is None:
+        if symbol not in self.stock_data:
             return None
 
-        latest = self.data.iloc[-1]
+        df = self.stock_data[symbol]
+
+        latest = df.iloc[-1]
 
         return {
             "close": latest["Close"],
@@ -107,12 +132,12 @@ class StockAnalyzer:
             "macd": latest["MACD"]
         }
 
-    def get_table_data(self):
+    def get_table_data(self, symbol):
 
-        if self.data is None:
+        if symbol not in self.stock_data:
             return None
 
-        table_df = self.data.copy()
+        table_df = self.stock_data[symbol].copy()
 
         table_df["Date"] = table_df["Date"].dt.strftime("%Y-%m-%d")
 
@@ -120,10 +145,10 @@ class StockAnalyzer:
 
     def generate_candlestick_chart(self, symbol):
 
-        if self.data is None:
+        if symbol not in self.stock_data:
             return None
 
-        df = self.data.copy()
+        df = self.stock_data[symbol].copy()
 
         df.set_index("Date", inplace=True)
 
@@ -151,20 +176,23 @@ class StockAnalyzer:
 
     def generate_macd_chart(self, symbol):
 
-        if self.data is None:
+        if symbol not in self.stock_data:
             return None
 
-        df = self.data.copy()
+        df = self.stock_data[symbol].copy()
 
         df = df.tail(60)
-
-        safe_symbol = symbol.replace(".", "_")
 
         chart_dir = os.path.join("static", "charts")
 
         os.makedirs(chart_dir, exist_ok=True)
 
-        filename = os.path.join(chart_dir, f"{safe_symbol}_macd.png")
+        safe_symbol = symbol.replace(".", "_")
+
+        filename = os.path.join(
+            chart_dir,
+            f"{safe_symbol}_macd.png"
+        )
 
         plt.figure(figsize=(12, 6))
 
