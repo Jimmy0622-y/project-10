@@ -2,6 +2,7 @@ from flask import Blueprint, render_template
 from flask import request, jsonify
 from app.services.scenario import StockScenario as Scenario
 from app.services.strategy_engine import StrategyEngine as Engine
+from app.extensions import game_engine
 
 strategy = Blueprint("strategy", __name__, url_prefix="/strategy")
 
@@ -24,31 +25,28 @@ def game_init():
 def nextDay():
     global game_engine
 
-    game_engine.nextDay()
-    return {"day": game_engine.day}
+    game_engine.next_day()
+    
+
+    return jsonify(game_engine.state())
 
 
 @strategy.route("/buy", methods=["POST"])
 def buy():
-    data = request.get_json() or {}
-    price = data.get("price")
-    amount = data.get("amount")
-    if price is None or amount is None:
-        return {"error": "invalid input"}, 400
-
     global game_engine
-    game_engine.buy(data["price"], data["amount"])
-    return jsonify({"status": "ok"})
+
+    data = request.get_json() or {}
+    amount = data.get("amount")
+
+    ok = game_engine.buy(amount)
+    return {"success": ok}
 
 
 @strategy.route("/sell", methods=["POST"])
 def sell():
-    data = request.get_json() or {}
-    price = data.get("price")
-    amount = data.get("amount")
-    if price is None or amount is None:
-        return {"error": "invalid input"}, 400
-
     global game_engine
-    game_engine.sell(data["price"], data["amount"])
-    return jsonify({"status": "ok"})
+    data = request.get_json() or {}
+    amount = data.get("amount")
+
+    ok = game_engine.sell(amount)
+    return {"success": ok}

@@ -42,9 +42,11 @@ class StrategyEngine:
         self.initial_cash = cash
 
         # 產生圖表
-        self.chart_path = self.analyzer.generate_candlestick_chart(self.symbol)
+        self.chart_path = self.analyzer.generate_candlestick_chart(self.df, self.symbol)
 
-        self.macd_path = self.analyzer.generate_macd_chart(self.symbol)
+        self.macd_path = self.analyzer.generate_macd_chart(self.df, self.symbol)
+
+        self.price = float(self.df.iloc[0]["Close"])
 
         # 交易紀錄
         self.history = []
@@ -53,26 +55,30 @@ class StrategyEngine:
     # next day（核心）
     # =========================
     def next_day(self):
+        print("DAY:", self.day)
+
+        row = self.df.iloc[self.day]
+        print("CLOSE:", row["Close"])
+
+        self.price = float(row["Close"])
 
         self.day += 1
 
-        # 避免超界
         if self.day >= len(self.df):
-            return {"done": True, "msg": "simulation finished"}
+            return {
+                "done": True,
+                "price": None,
+                "day": self.day,
+                "msg": "simulation finished",
+            }
 
-        row = self.df.iloc[self.day]
-        price = float(row["Close"])
-
-        portfolio_value = self.cash + self.stock * price
+        portfolio_value = self.portfolio_value(self.price)
         pnl = portfolio_value - self.initial_cash
         pnl_pct = (pnl / self.initial_cash) * 100
 
-        self.generate_candlestick_chart(self.symbol)
-        self.generate_macd_chart(self.symbol)
-
         return {
             "day": self.day,
-            "price": price,
+            "price": self.price,
             "cash": round(self.cash, 2),
             "stock": self.stock,
             "pnl": round(pnl, 2),
@@ -82,7 +88,11 @@ class StrategyEngine:
     # =========================
     # buy
     # =========================
-    def buy(self, price: float, amount: int):
+    def buy(self, amount: int):
+
+        row = self.df.iloc[self.day]
+        price = float(row["Close"])
+
         cost = price * amount
 
         if cost > self.cash:
@@ -97,11 +107,15 @@ class StrategyEngine:
     # =========================
     # sell
     # =========================
-    def sell(self, price: float, amount: int):
+    def sell(self, amount: int):
+
         if self.stock <= 0:
             return False
 
         amount = min(amount, self.stock)
+
+        row = self.df.iloc[self.day]
+        price = float(row["Close"])
 
         self.cash += price * amount
         self.stock -= amount
@@ -134,16 +148,14 @@ class StrategyEngine:
 
         state_df = self.window.current_state()
 
-        price = float(state_df.iloc[-1]["Close"])
-
-        portfolio = self.cash + self.stock * price
+        portfolio = self.cash + self.stock * self.price
 
         pnl = portfolio - self.initial_cash
 
         return {
-            "day": self.window.cursor,
+            "day": self.day,
             "symbol": self.symbol,
-            "price": price,
+            "price": self.price,
             "cash": round(self.cash, 2),
             "stock": self.stock,
             "pnl": round(pnl, 2),

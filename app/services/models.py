@@ -11,6 +11,7 @@ import os
 from ta.trend import SMAIndicator
 from ta.momentum import RSIIndicator
 from ta.trend import MACD
+from app.watchlist import WATCHLIST
 
 
 class StockAnalyzer:
@@ -81,6 +82,7 @@ class StockAnalyzer:
 
         # 小數點
         numeric_cols = df.select_dtypes(include=["number"]).columns
+
         df[numeric_cols] = df[numeric_cols].round(2)
 
         # 存入字典
@@ -132,38 +134,56 @@ class StockAnalyzer:
 
         return table_df.tail(10).to_dict(orient="records")
 
-    def generate_candlestick_chart(self, symbol):
+    def generate_candlestick_chart(self, df, symbol):
 
-        if symbol not in self.stock_data:
+        # 保險：資料檢查
+        if df is None or len(df) == 0:
             return None
 
-        df = self.stock_data[symbol].copy()
+        df = df.copy()
 
-        df.set_index("Date", inplace=True)
+        # === 統一時間格式 ===
+        df["Date"] = pd.to_datetime(df["Date"])
+        df = df.set_index("Date")
 
+        # === 只取最近 60 根 ===
         df = df.tail(60)
 
-        chart_dir = os.path.join("static", "charts")
-
+        # === 建立資料夾 ===
+        chart_dir = os.path.join("app", "static", "charts")
         os.makedirs(chart_dir, exist_ok=True)
 
-        safe_symbol = symbol.replace(".", "_")
-
+        # === 檔名安全化 ===
+        safe_symbol = symbol.replace(".", "_").replace("/", "_").replace("\\", "_").strip()
         filename = os.path.join(chart_dir, f"{safe_symbol}.png")
 
-        mpf.plot(
+        # === 刪舊圖 ===
+        if os.path.exists(filename):
+            os.remove(filename)
+
+        # === 畫圖 ===
+        fig, axlist = mpf.plot(
             df,
             type="candle",
             mav=(5, 20),
             volume=True,
             style="charles",
             figsize=(12, 8),
-            savefig=filename,
+            returnfig=True,
         )
+
+        # === 存檔 ===
+        fig.savefig(filename)
+        plt.close(fig)
+
+        # === 確認 ===
+        if not os.path.exists(filename):
+            print("K線圖生成失敗")
+            return None
 
         return f"/static/charts/{safe_symbol}.png"
 
-    def generate_macd_chart(self, symbol):
+    def generate_macd_chart(self, df, symbol):
 
         if symbol not in self.stock_data:
             return None
@@ -172,33 +192,46 @@ class StockAnalyzer:
 
         df = df.tail(60)
 
-        chart_dir = os.path.join("static", "charts")
+        chart_dir = os.path.join("app", "static", "charts")
 
         os.makedirs(chart_dir, exist_ok=True)
 
-        safe_symbol = symbol.replace(".", "_")
+        safe_symbol = (
+            symbol.replace(".", "_").replace("/", "_").replace("\\", "_").strip()
+        )
 
         filename = os.path.join(chart_dir, f"{safe_symbol}_macd.png")
 
-        plt.figure(figsize=(12, 6))
+        # 刪除舊圖
+        if os.path.exists(filename):
+            os.remove(filename)
 
-        plt.plot(df["Date"], df["MACD"], label="MACD")
+        fig, ax = plt.subplots(figsize=(12, 6))
 
-        plt.plot(df["Date"], df["MACD_SIGNAL"], label="Signal")
+        ax.plot(df["Date"], df["MACD"], label="MACD")
 
-        plt.bar(df["Date"], df["MACD_HIST"])
+        ax.plot(df["Date"], df["MACD_SIGNAL"], label="Signal")
 
-        plt.title(f"{symbol} MACD")
+        ax.bar(df["Date"], df["MACD_HIST"])
 
-        plt.legend()
+        ax.set_title(f"{symbol} MACD")
+
+        ax.legend()
 
         plt.xticks(rotation=45)
 
         plt.tight_layout()
 
-        plt.savefig(filename)
+        fig.savefig(filename)
 
-        plt.close()
+        plt.close(fig)
+
+        # 確認圖片存在
+        if not os.path.exists(filename):
+
+            print("MACD圖生成失敗")
+
+            return None
 
         return f"/static/charts/{safe_symbol}_macd.png"
 
@@ -225,3 +258,27 @@ class StockAnalyzer:
                 results.append({"symbol": symbol, "status": f"失敗：{str(e)}"})
 
         return results
+
+    def add_to_watchlist(self, symbol):
+
+        symbol = symbol.upper().strip()
+
+        # 避免重複
+        if symbol in WATCHLIST:
+            return
+
+        WATCHLIST.append(symbol)
+
+        # 寫回 watchlist.py
+        filepath = os.path.join("app", "watchlist.py")
+
+        with open(filepath, "w", encoding="utf-8") as f:
+
+            f.write("WATCHLIST = [\n")
+
+            for item in WATCHLIST:
+                f.write(f'    "{item}",\n')
+
+            f.write("]\n")
+
+        print(f"{symbol} 已加入 WATCHLIST")

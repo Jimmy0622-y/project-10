@@ -40,6 +40,8 @@ def index():
         try:
 
             df = analyzer.fetch_stock_data(symbol)
+            # 自動加入 watchlist
+            analyzer.add_to_watchlist(symbol)
 
             if df is None:
 
