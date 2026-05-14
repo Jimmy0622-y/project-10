@@ -2,6 +2,7 @@ import pandas as pd
 import yfinance as yf
 import mplfinance as mpf
 import matplotlib
+
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
@@ -11,6 +12,7 @@ from ta.trend import SMAIndicator
 from ta.momentum import RSIIndicator
 from ta.trend import MACD
 
+
 class StockAnalyzer:
 
     def __init__(self):
@@ -18,7 +20,7 @@ class StockAnalyzer:
         # 多股票資料
         self.stock_data = {}
 
-    def fetch_stock_data(self, symbol, period="1y"):
+    def fetch_stock_data(self, symbol, period="5y"):
 
         # 建立 csv 資料夾
         os.makedirs("csv", exist_ok=True)
@@ -32,7 +34,7 @@ class StockAnalyzer:
 
             print(f"讀取本地資料：{csv_path}")
 
-            df = pd.read_csv(csv_path,parse_dates=["Date"])
+            df = pd.read_csv(csv_path, parse_dates=["Date"])
 
             df["Date"] = pd.to_datetime(df["Date"])
 
@@ -45,12 +47,7 @@ class StockAnalyzer:
         # =========================
         print(f"下載 Yahoo 資料：{symbol}")
 
-        df = yf.download(
-            symbol,
-            period=period,
-            auto_adjust=True,
-            progress=False
-        )
+        df = yf.download(symbol, period=period, auto_adjust=True, progress=False)
 
         if df.empty:
             return None
@@ -58,10 +55,7 @@ class StockAnalyzer:
         df.reset_index(inplace=True)
 
         # 修正 MultiIndex
-        df.columns = [
-            col[0] if isinstance(col, tuple) else col
-            for col in df.columns
-        ]
+        df.columns = [col[0] if isinstance(col, tuple) else col for col in df.columns]
 
         # 日期格式
         df["Date"] = pd.to_datetime(df["Date"])
@@ -70,22 +64,13 @@ class StockAnalyzer:
         close_price = df["Close"].squeeze()
 
         # SMA5
-        df["SMA5"] = SMAIndicator(
-            close=close_price,
-            window=5
-        ).sma_indicator()
+        df["SMA5"] = SMAIndicator(close=close_price, window=5).sma_indicator()
 
         # SMA20
-        df["SMA20"] = SMAIndicator(
-            close=close_price,
-            window=20
-        ).sma_indicator()
+        df["SMA20"] = SMAIndicator(close=close_price, window=20).sma_indicator()
 
         # RSI
-        df["RSI"] = RSIIndicator(
-            close=close_price,
-            window=14
-        ).rsi()
+        df["RSI"] = RSIIndicator(close=close_price, window=14).rsi()
 
         # MACD
         macd = MACD(close=close_price)
@@ -133,7 +118,7 @@ class StockAnalyzer:
             "sma5": latest["SMA5"],
             "sma20": latest["SMA20"],
             "rsi": latest["RSI"],
-            "macd": latest["MACD"]
+            "macd": latest["MACD"],
         }
 
     def get_table_data(self, symbol):
@@ -173,10 +158,10 @@ class StockAnalyzer:
             volume=True,
             style="charles",
             figsize=(12, 8),
-            savefig=filename
+            savefig=filename,
         )
 
-        return f"charts/{safe_symbol}.png"
+        return f"/static/charts/{safe_symbol}.png"
 
     def generate_macd_chart(self, symbol):
 
@@ -193,29 +178,15 @@ class StockAnalyzer:
 
         safe_symbol = symbol.replace(".", "_")
 
-        filename = os.path.join(
-            chart_dir,
-            f"{safe_symbol}_macd.png"
-        )
+        filename = os.path.join(chart_dir, f"{safe_symbol}_macd.png")
 
         plt.figure(figsize=(12, 6))
 
-        plt.plot(
-            df["Date"],
-            df["MACD"],
-            label="MACD"
-        )
+        plt.plot(df["Date"], df["MACD"], label="MACD")
 
-        plt.plot(
-            df["Date"],
-            df["MACD_SIGNAL"],
-            label="Signal"
-        )
+        plt.plot(df["Date"], df["MACD_SIGNAL"], label="Signal")
 
-        plt.bar(
-            df["Date"],
-            df["MACD_HIST"]
-        )
+        plt.bar(df["Date"], df["MACD_HIST"])
 
         plt.title(f"{symbol} MACD")
 
@@ -229,7 +200,7 @@ class StockAnalyzer:
 
         plt.close()
 
-        return f"charts/{safe_symbol}_macd.png"
+        return f"/static/charts/{safe_symbol}_macd.png"
 
     def update_watchlist(self, watchlist):
 
@@ -247,16 +218,10 @@ class StockAnalyzer:
 
                 self.generate_macd_chart(symbol)
 
-                results.append({
-                    "symbol": symbol,
-                    "status": "成功"
-                })
+                results.append({"symbol": symbol, "status": "成功"})
 
             except Exception as e:
 
-                results.append({
-                    "symbol": symbol,
-                    "status": f"失敗：{str(e)}"
-                })
+                results.append({"symbol": symbol, "status": f"失敗：{str(e)}"})
 
-        return results    
+        return results

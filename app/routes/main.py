@@ -5,7 +5,6 @@ from app.watchlist import WATCHLIST
 
 main = Blueprint("main", __name__)
 
-analyzer = StockAnalyzer()
 
 
 # =========================

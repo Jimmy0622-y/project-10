@@ -1,29 +1,50 @@
-# 產生6個月+1個月題目
 class StockScenario:
     TRAIN_DAYS = 120  # 約 6 個月
-    TEST_DAYS = 20  # 約 1 個月
+    TEST_DAYS = 20    # 約 1 個月
 
     def __init__(self, df):
         self.df = df
 
-        self.start_idx = None
-        self.train = None
-        self.test = None
-
-    def split(self):
+    def rolling_windows(self, train_days=TRAIN_DAYS, test_days=TEST_DAYS, seed=None):
         import random
 
-        max_start = len(self.df) - (self.TRAIN_DAYS + self.TEST_DAYS)
+        df = self.df.reset_index(drop=True)
 
-        self.start_idx = random.randint(0, max_start)
+        max_start = len(df) - (train_days + test_days)
+        if max_start <= 0:
+            raise ValueError(f"資料長度不足：{len(df)}")
 
-        self.train = self.df[self.start_idx : self.start_idx + self.TRAIN_DAYS]
+        # ✔ 改成可重現
+        if seed is not None:
+            random.seed(seed)
 
-        self.test = self.df[
-            self.start_idx
-            + self.TRAIN_DAYS : self.start_idx
-            + self.TRAIN_DAYS
-            + self.TEST_DAYS
-        ]
+        start_idx = random.randint(0, max_start)
 
-        return self
+        train_df = df.iloc[start_idx : start_idx + train_days].copy()
+        test_df = df.iloc[start_idx + train_days : start_idx + train_days + test_days].copy()
+
+        return RollingWindow(train_df, test_df)
+      
+      
+class RollingWindow:
+    def __init__(self, train_df, test_df):
+        self.train_df = train_df.reset_index(drop=True)
+        self.test_df = test_df.reset_index(drop=True)
+
+        self.cursor = 0
+
+        # ✔ 初始 state = train + test[0]
+        self.history = self.train_df.copy()
+
+    def current_state(self):
+        return self.history
+
+    def next(self):
+        if self.cursor >= len(self.test_df):
+            return None
+
+        new_row = self.test_df.iloc[self.cursor]
+        self.history = self.history._append(new_row, ignore_index=True)
+
+        self.cursor += 1
+        return self.history
