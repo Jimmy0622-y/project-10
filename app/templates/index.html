@@ -39,6 +39,16 @@
             開始分析
           </button>
         </form>
+        <div class="mt-4 flex justify-center">
+          <a
+            href="/update_all"
+            class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500
+                  font-semibold rounded-lg transition-colors
+                  duration-200 shadow-lg"
+          >
+            一鍵更新股票清單
+          </a>
+        </div>
 
         {% if message %}
         <p class="mt-4 text-gray-400">{{ message }}</p>
@@ -135,16 +145,15 @@
       <h2 class="text-2xl font-bold mb-4">K 線圖分析</h2>
 
       <img
-        src="{{ url_for('static', filename=chart_path) }}"
+        src="{{ url_for('static', filename=chart_path) }}?v={{ range(1, 9999999) | random }}"
         class="rounded-xl shadow-lg w-full"
       />
-    </div>
     {% endif %} {% if macd_chart %}
     <div class="bg-gray-800 rounded-xl border border-gray-700 p-6 mt-10">
       <h2 class="text-2xl font-bold mb-4">MACD 技術分析</h2>
 
       <img
-        src="{{ url_for('static', filename=macd_chart) }}"
+        src="{{ url_for('static', filename=macd_chart) }}?v={{ range(1, 9999999) | random }}"
         class="rounded-xl shadow-lg w-full"
       />
     </div>
