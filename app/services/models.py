@@ -10,6 +10,7 @@ import os
 from ta.trend import SMAIndicator
 from ta.momentum import RSIIndicator
 from ta.trend import MACD
+from app.watchlist import WATCHLIST
 
 class StockAnalyzer:
 
@@ -158,23 +159,54 @@ class StockAnalyzer:
 
         df = df.tail(60)
 
-        chart_dir = os.path.join("static", "charts")
+        chart_dir = os.path.join(
+            "app",
+            "static",
+            "charts"
+        )
 
         os.makedirs(chart_dir, exist_ok=True)
 
-        safe_symbol = symbol.replace(".", "_")
+        safe_symbol = (
+            symbol
+            .replace(".", "_")
+            .replace("/", "_")
+            .replace("\\", "_")
+            .strip()
+        )
 
-        filename = os.path.join(chart_dir, f"{safe_symbol}.png")
+        filename = os.path.join(
+            chart_dir,
+            f"{safe_symbol}.png"
+        )
 
-        mpf.plot(
+        # 刪除舊圖
+        if os.path.exists(filename):
+            os.remove(filename)
+
+        # 建立圖
+        fig, axlist = mpf.plot(
             df,
             type="candle",
             mav=(5, 20),
             volume=True,
             style="charles",
             figsize=(12, 8),
-            savefig=filename
+            returnfig=True
         )
+
+        # 儲存
+        fig.savefig(filename)
+
+        # 關閉
+        plt.close(fig)
+
+        # 確認圖片存在
+        if not os.path.exists(filename):
+
+            print("K線圖生成失敗")
+
+            return None
 
         return f"charts/{safe_symbol}.png"
 
@@ -187,47 +219,68 @@ class StockAnalyzer:
 
         df = df.tail(60)
 
-        chart_dir = os.path.join("static", "charts")
+        chart_dir = os.path.join(
+            "app",
+            "static",
+            "charts"
+        )
 
         os.makedirs(chart_dir, exist_ok=True)
 
-        safe_symbol = symbol.replace(".", "_")
+        safe_symbol = (
+            symbol
+            .replace(".", "_")
+            .replace("/", "_")
+            .replace("\\", "_")
+            .strip()
+        )
 
         filename = os.path.join(
             chart_dir,
             f"{safe_symbol}_macd.png"
         )
 
-        plt.figure(figsize=(12, 6))
+        # 刪除舊圖
+        if os.path.exists(filename):
+            os.remove(filename)
 
-        plt.plot(
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        ax.plot(
             df["Date"],
             df["MACD"],
             label="MACD"
         )
 
-        plt.plot(
+        ax.plot(
             df["Date"],
             df["MACD_SIGNAL"],
             label="Signal"
         )
 
-        plt.bar(
+        ax.bar(
             df["Date"],
             df["MACD_HIST"]
         )
 
-        plt.title(f"{symbol} MACD")
+        ax.set_title(f"{symbol} MACD")
 
-        plt.legend()
+        ax.legend()
 
         plt.xticks(rotation=45)
 
         plt.tight_layout()
 
-        plt.savefig(filename)
+        fig.savefig(filename)
 
-        plt.close()
+        plt.close(fig)
+
+        # 確認圖片存在
+        if not os.path.exists(filename):
+
+            print("MACD圖生成失敗")
+
+            return None
 
         return f"charts/{safe_symbol}_macd.png"
 
@@ -259,4 +312,30 @@ class StockAnalyzer:
                     "status": f"失敗：{str(e)}"
                 })
 
-        return results    
+        return results
+    def add_to_watchlist(self, symbol):
+
+        symbol = symbol.upper().strip()
+
+        # 避免重複
+        if symbol in WATCHLIST:
+            return
+
+        WATCHLIST.append(symbol)
+
+        # 寫回 watchlist.py
+        filepath = os.path.join(
+            "app",
+            "watchlist.py"
+        )
+
+        with open(filepath, "w", encoding="utf-8") as f:
+
+            f.write("WATCHLIST = [\n")
+
+            for item in WATCHLIST:
+                f.write(f'    "{item}",\n')
+
+            f.write("]\n")
+
+        print(f"{symbol} 已加入 WATCHLIST")    
