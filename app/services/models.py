@@ -154,7 +154,9 @@ class StockAnalyzer:
         os.makedirs(chart_dir, exist_ok=True)
 
         # === 檔名安全化 ===
-        safe_symbol = symbol.replace(".", "_").replace("/", "_").replace("\\", "_").strip()
+        safe_symbol = (
+            symbol.replace(".", "_").replace("/", "_").replace("\\", "_").strip()
+        )
         filename = os.path.join(chart_dir, f"{safe_symbol}.png")
 
         # === 刪舊圖 ===
@@ -245,11 +247,11 @@ class StockAnalyzer:
 
                 print(f"更新：{symbol}")
 
-                self.fetch_stock_data(symbol)
+                df = self.fetch_stock_data(symbol)
 
-                self.generate_candlestick_chart(symbol)
+                self.generate_candlestick_chart(df, symbol)
 
-                self.generate_macd_chart(symbol)
+                self.generate_macd_chart(df, symbol)
 
                 results.append({"symbol": symbol, "status": "成功"})
 
