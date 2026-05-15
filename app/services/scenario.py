@@ -1,6 +1,8 @@
+import pandas as pd
+
 class StockScenario:
     TRAIN_DAYS = 120  # 約 6 個月
-    TEST_DAYS = 20    # 約 1 個月
+    TEST_DAYS = 20  # 約 1 個月
 
     def __init__(self, df):
         self.df = df
@@ -21,11 +23,13 @@ class StockScenario:
         start_idx = random.randint(0, max_start)
 
         train_df = df.iloc[start_idx : start_idx + train_days].copy()
-        test_df = df.iloc[start_idx + train_days : start_idx + train_days + test_days].copy()
+        test_df = df.iloc[
+            start_idx + train_days : start_idx + train_days + test_days
+        ].copy()
 
         return RollingWindow(train_df, test_df)
-      
-      
+
+
 class RollingWindow:
     def __init__(self, train_df, test_df):
         self.train_df = train_df.reset_index(drop=True)
@@ -43,8 +47,9 @@ class RollingWindow:
         if self.cursor >= len(self.test_df):
             return None
 
-        new_row = self.test_df.iloc[self.cursor]
-        self.history = self.history._append(new_row, ignore_index=True)
+        new_row = self.test_df.iloc[[self.cursor]]  # ⚠️ 重點：雙中括號
+
+        self.history = pd.concat([self.history, new_row], ignore_index=True)
 
         self.cursor += 1
         return self.history

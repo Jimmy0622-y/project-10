@@ -19,7 +19,9 @@ class TradeRecord:
 
 class StrategyEngine:
     def __init__(self, cash=INITIAL_FUNDS):
+        self.reset(cash)
 
+    def reset(self, cash=INITIAL_FUNDS):
         # 隨機股票
         self.symbol = random.choice(WATCHLIST)
 
@@ -36,73 +38,58 @@ class StrategyEngine:
         self.window = Scenario(self.df).rolling_windows()
 
         # 初始資金
-        self.day = 0
-        self.cash = cash
-        self.stock = 0
+        self.day = 1
         self.initial_cash = cash
+        self.cash = self.initial_cash
+        self.stock = 0
 
         # 產生圖表
         self.chart_path = self.analyzer.generate_candlestick_chart(self.df, self.symbol)
 
         self.macd_path = self.analyzer.generate_macd_chart(self.df, self.symbol)
 
-        self.price = float(self.df.iloc[0]["Close"])
+        self.update_price()
 
         # 交易紀錄
         self.history = []
+
+    def gameInit(self):
+        self.reset()
+        return self.get_init_state()
 
     # =========================
     # next day（核心）
     # =========================
     def next_day(self):
-        print("DAY:", self.day)
-
-        row = self.df.iloc[self.day]
-        print("CLOSE:", row["Close"])
-
-        self.price = float(row["Close"])
+        result = self.window.next()
+            
+        if result is None:
+            return {"message": "遊戲結束"}
 
         self.day += 1
+        self.window.next()
+        self.update_price()
+        
+        print("DAY:", self.day)
 
-        if self.day >= len(self.df):
-            return {
-                "done": True,
-                "price": None,
-                "day": self.day,
-                "msg": "simulation finished",
-            }
-
-        portfolio_value = self.portfolio_value(self.price)
-        pnl = portfolio_value - self.initial_cash
-        pnl_pct = (pnl / self.initial_cash) * 100
-
-        return {
-            "day": self.day,
-            "price": self.price,
-            "cash": round(self.cash, 2),
-            "stock": self.stock,
-            "pnl": round(pnl, 2),
-            "pnl_pct": round(pnl_pct, 2),
-        }
+        return self.get_next_day_state()
 
     # =========================
     # buy
     # =========================
     def buy(self, amount: int):
 
-        row = self.df.iloc[self.day]
-        price = float(row["Close"])
-
-        cost = price * amount
+        cost = self.price * amount
 
         if cost > self.cash:
             return False
 
         self.cash -= cost
         self.stock += amount
+        self.update_price()
 
-        self._log("buy", price, amount)
-        return True
+        self._log("buy", self.price, amount)
+        return self.get_trade_state()
 
     # =========================
     # sell
@@ -114,14 +101,13 @@ class StrategyEngine:
 
         amount = min(amount, self.stock)
 
-        row = self.df.iloc[self.day]
-        price = float(row["Close"])
+        self.update_price()
 
-        self.cash += price * amount
+        self.cash += self.price * amount
         self.stock -= amount
 
-        self._log("sell", price, amount)
-        return True
+        self._log("sell", self.price, amount)
+        return self.get_trade_state()
 
     # =========================
     # log
@@ -141,31 +127,62 @@ class StrategyEngine:
     # ---------------------------
     # 資產計算
     # ---------------------------
-    def portfolio_value(self, current_price: float):
-        return self.cash + self.stock * current_price
 
-    def state(self):
-
-        state_df = self.window.current_state()
-
+    def get_pnl(self):
         portfolio = self.cash + self.stock * self.price
+        return portfolio - self.initial_cash
 
-        pnl = portfolio - self.initial_cash
+    def update_price(self):
+        state = self.window.current_state()
+        self.price = float(state.iloc[-1]["Close"])
+        return self.price
 
+    # ---------------------------
+    # 回傳格式
+    # ---------------------------
+
+    def base_state(self):
         return {
-            "day": self.day,
             "symbol": self.symbol,
             "price": self.price,
+        }
+
+    def portfolio_state(self):
+        return {
             "cash": round(self.cash, 2),
             "stock": self.stock,
-            "pnl": round(pnl, 2),
-            # 🔥 圖路徑
+            "pnl": round(self.get_pnl(), 2),
+        }
+
+    def market_state(self):
+        return {
+            "day": self.day,
             "chart": self.chart_path,
             "macd": self.macd_path,
+        }
+
+    def get_init_state(self):
+        return {
+            **self.base_state(),
+            **self.portfolio_state(),
+            **self.market_state(),
+        }
+
+    def get_next_day_state(self):
+        return {
+            **self.market_state(),
+            "price": self.price,
+            "pnl": round(self.get_pnl(), 2),
+        }
+
+    def get_trade_state(self):
+        return {
+            **self.portfolio_state(),
+            "price": self.price,
         }
 
     # ---------------------------
     # 轉換給前端用
     # ---------------------------
     def history_dict(self):
-        return [asdict(h) for h in self.history]
+        return self.history.to_dict(orient="records")

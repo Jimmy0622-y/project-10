@@ -43,12 +43,12 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
           <p class="text-sm text-gray-400">當前天數</p>
-          <p id="day" class="text-xl font-bold">-</p>
+          <p id="current-day" class="text-xl font-bold">-</p>
         </div>
 
         <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
           <p class="text-sm text-gray-400">Cash</p>
-          <p id="cash" class="text-xl font-bold text-green-400">-</p>
+          <p id="current-cash" class="text-xl font-bold text-green-400">-</p>
         </div>
 
         <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
@@ -80,7 +80,7 @@
 
     <!-- 買入 -->
     <button
-      onclick="buy()"
+      onclick="trade('buy')"
       class="px-6 py-3 bg-green-600 hover:bg-green-500 rounded-lg font-semibold"
     >
       買入
@@ -88,7 +88,7 @@
 
     <!-- 賣出 -->
     <button
-      onclick="sell()"
+      onclick="trade('sell')"
       class="px-6 py-3 bg-red-600 hover:bg-red-500 rounded-lg font-semibold"
     >
       賣出
@@ -130,32 +130,20 @@
     </div>
 
     <script>
-      function render(data) {
-        if (!data) return;
-
-        document.getElementById("day").innerText = data.day ?? "-";
-        document.getElementById("cash").innerText = data.cash ?? "-";
-        document.getElementById("position").innerText = data.stock ?? "-";
-        document.getElementById("pnl").innerText = data.pnl ?? "-";
-      }
-
       async function initGame() {
         const res = await fetch("/strategy/gameInit");
         const data = await res.json();
 
         console.log("init:", data);
 
-        render(data);
+        render_account(data);
+        render_nextDay(data);
+        render_chart(data);
       }
 
       async function nextDay() {
         try {
-          const res = await fetch("/strategy/nextDay", {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json"
-            }
-          });
+          const res = await fetch("/strategy/nextDay");
 
           if (!res.ok) {
             console.error("HTTP error:", res.status);
@@ -163,94 +151,70 @@
           }
 
           const data = await res.json();
-          console.log("RAW API PRICE:", data.price);
+
           console.log("nextDay response:", data);
 
-          // ---- 基本結構檢查 ----
-          if (!data || typeof data !== "object") {
-            console.error("API 回傳不是物件:", data);
-            return;
-          }
-
-          if (!("price" in data)) {
-            console.error("API 缺少 price 欄位:", data);
-            return;
-          }
-
-          // ---- 更新 UI（安全寫法）----
-          const priceEl = document.getElementById("current-price");
-          if (priceEl) {
-            priceEl.innerText = Number(data.price).toFixed(2);
-          }
-
-          const dayEl = document.getElementById("current-day");
-          if (dayEl && data.day !== undefined) {
-            dayEl.innerText = data.day;
-          }
-
-          const cashEl = document.getElementById("current-cash");
-          if (cashEl && data.cash !== undefined) {
-            cashEl.innerText = Number(data.cash).toFixed(2);
-          }
-
-          // ---- debug ----
-          console.log(
-            `DAY=${data.day}, PRICE=${data.price}, PNL=${data.pnl}`
-          );
+          render_nextDay(data);
+          render_chart(data);
 
         } catch (err) {
           console.error("nextDay failed:", err);
         }
       }
 
-      async function buy() {
-        const amount = parseInt(
+      // 檢查買入或賣出的輸入值 並發request
+      async function trade(action) { // action = "buy" or "sell"
+        const amount = Number(
           document.getElementById("amount").value
         );
 
-        await fetch("/buy", {
+        if (
+          !Number.isInteger(amount) ||
+          amount <= 0
+        ) {
+          alert("請輸入正整數股數");
+          return;
+        }
+
+        const res = await fetch(`/strategy/${action}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            amount: amount,
+            amount,
           }),
         });
+        const data = await res.json();
+        
+        render_account(data);
+      }
+      
+      function render_account(data) {
+        document.getElementById("current-cash").innerText =
+          Number(data.cash ?? 0).toFixed(2);
+
+        document.getElementById("position").innerText =
+          data.stock ?? "-";
       }
 
-      async function sell() {
-        const amount = parseInt(
-          document.getElementById("amount").value
-        );
+      function render_nextDay(data) {
+        document.getElementById("current-day").innerText =
+          data.day ?? "-";
 
-        await fetch("/sell", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            amount: amount,
-          }),
-        });
+        document.getElementById("current-price").innerText =
+          Number(data.price ?? 0).toFixed(2);
+
+        document.getElementById("pnl").innerText =
+          Number(data.pnl ?? 0).toFixed(2);
       }
 
-      function render(data) {
-        if (!data) return;
-
-        document.getElementById("day").innerText = data.day ?? "-";
-        document.getElementById("cash").innerText = data.cash ?? "-";
-        document.getElementById("position").innerText = data.stock ?? "-";
-        document.getElementById("pnl").innerText = data.pnl ?? "-";
-
-        // 🔥 圖片更新（核心）
-        const symbol = data.symbol ?? "TSLA";
-
+      function render_chart(data) {
         document.getElementById("chart").src =
-          data.chart + "?t=" + new Date().getTime();
+          data.chart + "?t=" + Date.now();
 
         document.getElementById("macd").src =
-          data.macd + "?t=" + new Date().getTime();
+          data.macd + "?t=" + Date.now();
       }
     </script>
   </body>

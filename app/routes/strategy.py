@@ -6,6 +6,7 @@ from app.extensions import game_engine
 
 strategy = Blueprint("strategy", __name__, url_prefix="/strategy")
 
+game_engine = Engine()
 
 @strategy.route("/")
 def strategy_page():
@@ -16,19 +17,14 @@ def strategy_page():
 def game_init():
     global game_engine
 
-    game_engine = Engine()
-
-    return jsonify(game_engine.state())
+    return jsonify(game_engine.gameInit())
 
 
 @strategy.route("/nextDay")
 def nextDay():
     global game_engine
 
-    game_engine.next_day()
-    
-
-    return jsonify(game_engine.state())
+    return jsonify(game_engine.next_day())
 
 
 @strategy.route("/buy", methods=["POST"])
@@ -38,8 +34,7 @@ def buy():
     data = request.get_json() or {}
     amount = data.get("amount")
 
-    ok = game_engine.buy(amount)
-    return {"success": ok}
+    return jsonify(game_engine.buy(amount))
 
 
 @strategy.route("/sell", methods=["POST"])
@@ -48,5 +43,4 @@ def sell():
     data = request.get_json() or {}
     amount = data.get("amount")
 
-    ok = game_engine.sell(amount)
-    return {"success": ok}
+    return jsonify(game_engine.sell(amount))
