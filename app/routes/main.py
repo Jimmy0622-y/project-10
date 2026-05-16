@@ -16,10 +16,7 @@ def update_all():
 
     results = analyzer.update_watchlist(WATCHLIST)
 
-    return render_template(
-        "update.html",
-        results=results
-    )
+    return render_template("update.html", results=results)
 
 
 # =========================
@@ -57,10 +54,10 @@ def index():
                 table_data = analyzer.get_table_data(symbol)
 
                 # K 線圖
-                chart_path = analyzer.generate_candlestick_chart(symbol)
+                chart_path = analyzer.generate_candlestick_chart(df, symbol)
 
                 # MACD 圖
-                macd_chart = analyzer.generate_macd_chart(symbol)
+                macd_chart = analyzer.generate_macd_chart(df, symbol)
 
                 message = f"{symbol} 分析完成"
 
