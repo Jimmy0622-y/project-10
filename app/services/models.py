@@ -183,7 +183,7 @@ class StockAnalyzer:
             print("K線圖生成失敗")
             return None
 
-        return f"/static/charts/{safe_symbol}.png"
+        return f"charts/{safe_symbol}.png"
 
     def generate_macd_chart(self, df, symbol):
 
@@ -235,7 +235,7 @@ class StockAnalyzer:
 
             return None
 
-        return f"/static/charts/{safe_symbol}_macd.png"
+        return f"charts/{safe_symbol}_macd.png"
 
     def update_watchlist(self, watchlist):
 

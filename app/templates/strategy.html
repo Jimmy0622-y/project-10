@@ -211,10 +211,16 @@
 
       function render_chart(data) {
         document.getElementById("chart").src =
-          data.chart + "?t=" + Date.now();
+          "/static/" +
+          data.chart +
+          "?t=" +
+          Date.now();
 
         document.getElementById("macd").src =
-          data.macd + "?t=" + Date.now();
+          "/static/" +
+          data.macd +
+          "?t=" +
+          Date.now();
       }
     </script>
   </body>
