@@ -62,14 +62,13 @@ class StrategyEngine:
     # =========================
     def next_day(self):
         result = self.window.next()
-            
+
         if result is None:
-            return {"message": "遊戲結束"}
+            return {"success": False, "message": "遊戲結束"}
 
         self.day += 1
-        self.window.next()
         self.update_price()
-        
+
         print("DAY:", self.day)
 
         return self.get_next_day_state()
@@ -163,6 +162,7 @@ class StrategyEngine:
 
     def get_init_state(self):
         return {
+            "success": True,
             **self.base_state(),
             **self.portfolio_state(),
             **self.market_state(),
@@ -170,6 +170,7 @@ class StrategyEngine:
 
     def get_next_day_state(self):
         return {
+            "success": True,
             **self.market_state(),
             "price": self.price,
             "pnl": round(self.get_pnl(), 2),
@@ -177,6 +178,7 @@ class StrategyEngine:
 
     def get_trade_state(self):
         return {
+            "success": True,
             **self.portfolio_state(),
             "price": self.price,
         }

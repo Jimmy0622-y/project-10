@@ -6,7 +6,6 @@ from app.extensions import game_engine
 
 strategy = Blueprint("strategy", __name__, url_prefix="/strategy")
 
-game_engine = Engine()
 
 @strategy.route("/")
 def strategy_page():
