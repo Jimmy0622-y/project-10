@@ -2,7 +2,7 @@ import pandas as pd
 
 class StockScenario:
     TRAIN_DAYS = 120  # 約 6 個月
-    TEST_DAYS = 20  # 約 1 個月
+    TEST_DAYS = 29  # 第 1 天是初始狀態，再往後 29 天完成 30 天模擬
 
     def __init__(self, df):
         self.df = df
