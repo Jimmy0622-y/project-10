@@ -170,12 +170,12 @@ class StockAnalyzer:
             mav=(5, 20),
             volume=True,
             style="charles",
-            figsize=(12, 8),
+            figsize=(14, 9),
             returnfig=True,
         )
 
         # === 存檔 ===
-        fig.savefig(filename)
+        fig.savefig(filename, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
         # === 確認 ===
@@ -187,10 +187,10 @@ class StockAnalyzer:
 
     def generate_macd_chart(self, df, symbol):
 
-        if symbol not in self.stock_data:
+        if df is None or len(df) == 0:
             return None
 
-        df = self.stock_data[symbol].copy()
+        df = df.copy()
 
         df = df.tail(60)
 
@@ -208,7 +208,7 @@ class StockAnalyzer:
         if os.path.exists(filename):
             os.remove(filename)
 
-        fig, ax = plt.subplots(figsize=(12, 6))
+        fig, ax = plt.subplots(figsize=(14, 7))
 
         ax.plot(df["Date"], df["MACD"], label="MACD")
 
@@ -224,7 +224,7 @@ class StockAnalyzer:
 
         plt.tight_layout()
 
-        fig.savefig(filename)
+        fig.savefig(filename, dpi=150, bbox_inches="tight")
 
         plt.close(fig)
 

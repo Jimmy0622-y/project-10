@@ -33,7 +33,7 @@
             ← 返回股票分析
         </a>
     </div>
-    <div class="max-w-5xl mx-auto">
+    <div class="max-w-7xl mx-auto">
       <!-- Header -->
       <header class="text-center mb-10">
         <h1
@@ -80,6 +80,23 @@
       </div>
 
 <!-- 操作區 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+          <p class="text-sm text-gray-400">SMA5</p>
+          <p id="sma5" class="text-xl font-bold text-cyan-400">-</p>
+        </div>
+
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+          <p class="text-sm text-gray-400">SMA20</p>
+          <p id="sma20" class="text-xl font-bold text-orange-400">-</p>
+        </div>
+
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+          <p class="text-sm text-gray-400">RSI</p>
+          <p id="rsi" class="text-xl font-bold text-pink-400">-</p>
+        </div>
+      </div>
+
 <div
   class="bg-gray-800 border border-gray-700 rounded-xl p-6 mb-10"
 >
@@ -132,19 +149,66 @@
     </div>
 
     <!-- 圖表區 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-      <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+    <div class="grid grid-cols-1 gap-6 mb-10">
+      <div class="bg-gray-800 p-5 rounded-xl border border-gray-700">
         <p class="text-sm text-gray-400 mb-2">K線圖</p>
 
         <img id="chart" class="rounded-lg w-full" />
       </div>
 
-      <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+      <div class="bg-gray-800 p-5 rounded-xl border border-gray-700">
         <p class="text-sm text-gray-400 mb-2">MACD</p>
 
         <img id="macd" class="rounded-lg w-full" />
       </div>
     </div>
+
+    <section
+      id="final-report"
+      class="hidden bg-gray-800 border border-emerald-700 rounded-xl p-6 mb-10"
+    >
+      <div class="flex flex-wrap items-end justify-between gap-3 mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-emerald-300">30 天模擬結果</h2>
+          <p class="text-sm text-gray-400 mt-1">投資歷程與指標建議</p>
+        </div>
+        <div id="report-summary" class="text-right text-sm text-gray-300"></div>
+      </div>
+
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-3">建議</h3>
+        <ul id="advice-list" class="space-y-2 text-gray-200"></ul>
+      </div>
+
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-3">每日歷程</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[980px] text-sm">
+            <thead class="text-gray-400 border-b border-gray-700">
+              <tr>
+                <th class="py-2 text-left">Day</th>
+                <th class="py-2 text-left">Date</th>
+                <th class="py-2 text-right">Price</th>
+                <th class="py-2 text-right">SMA5</th>
+                <th class="py-2 text-right">SMA20</th>
+                <th class="py-2 text-right">RSI</th>
+                <th class="py-2 text-right">Cash</th>
+                <th class="py-2 text-right">Stock</th>
+                <th class="py-2 text-right">Total</th>
+                <th class="py-2 text-right">PnL</th>
+                <th class="py-2 text-left">Trade</th>
+              </tr>
+            </thead>
+            <tbody id="daily-history"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-semibold mb-3">交易紀錄</h3>
+        <div id="trade-history" class="space-y-2 text-sm text-gray-300"></div>
+      </div>
+    </section>
 
     <script>
       async function initGame() {
@@ -153,6 +217,7 @@
 
         console.log("init:", data);
 
+        hide_report();
         render_account(data);
         render_nextDay(data);
         render_chart(data);
@@ -173,6 +238,9 @@
 
           render_nextDay(data);
           render_chart(data);
+          if (data.completed && data.report) {
+            render_report(data.report);
+          }
 
         } catch (err) {
           console.error("nextDay failed:", err);
@@ -205,6 +273,10 @@
         const data = await res.json();
         
         render_account(data);
+        render_nextDay(data);
+        if (data.completed && data.report) {
+          render_report(data.report);
+        }
       }
       
       function render_account(data) {
@@ -224,6 +296,89 @@
 
         document.getElementById("pnl").innerText =
           Number(data.pnl ?? 0).toFixed(2);
+
+        render_indicators(data);
+      }
+
+      function render_indicator(id, value) {
+        document.getElementById(id).innerText =
+          value == null ? "-" : Number(value).toFixed(2);
+      }
+
+      function render_indicators(data) {
+        render_indicator("sma5", data.sma5);
+        render_indicator("sma20", data.sma20);
+        render_indicator("rsi", data.rsi);
+      }
+
+      function format_number(value) {
+        return value == null ? "-" : Number(value).toFixed(2);
+      }
+
+      function format_trade_list(trades) {
+        if (!trades || trades.length === 0) {
+          return "-";
+        }
+
+        return trades
+          .map((trade) => `${trade.action === "buy" ? "買入" : "賣出"} ${trade.amount}`)
+          .join(", ");
+      }
+
+      function hide_report() {
+        document.getElementById("final-report").classList.add("hidden");
+      }
+
+      function render_report(report) {
+        const summary = report.summary;
+        const pnlClass = summary.pnl >= 0 ? "text-green-400" : "text-red-400";
+
+        document.getElementById("report-summary").innerHTML = `
+          <div>最終資產：${format_number(summary.final_value)}</div>
+          <div class="${pnlClass}">損益：${format_number(summary.pnl)} (${format_number(summary.return_pct)}%)</div>
+          <div>交易次數：${summary.trade_count}</div>
+        `;
+
+        document.getElementById("advice-list").innerHTML = report.advice
+          .map((item) => `<li class="bg-gray-900 border border-gray-700 rounded-lg p-3">${item}</li>`)
+          .join("");
+
+        document.getElementById("daily-history").innerHTML = report.daily_history
+          .map((item) => `
+            <tr class="border-b border-gray-700/70">
+              <td class="py-2">${item.day}</td>
+              <td class="py-2">${item.date ?? "-"}</td>
+              <td class="py-2 text-right">${format_number(item.price)}</td>
+              <td class="py-2 text-right">${format_number(item.sma5)}</td>
+              <td class="py-2 text-right">${format_number(item.sma20)}</td>
+              <td class="py-2 text-right">${format_number(item.rsi)}</td>
+              <td class="py-2 text-right">${format_number(item.cash)}</td>
+              <td class="py-2 text-right">${item.stock}</td>
+              <td class="py-2 text-right">${format_number(item.total_value)}</td>
+              <td class="py-2 text-right ${item.pnl >= 0 ? "text-green-400" : "text-red-400"}">${format_number(item.pnl)}</td>
+              <td class="py-2">${format_trade_list(item.trades)}</td>
+            </tr>
+          `)
+          .join("");
+
+        document.getElementById("trade-history").innerHTML =
+          report.trade_history.length === 0
+            ? `<div class="bg-gray-900 border border-gray-700 rounded-lg p-3">本次模擬沒有交易紀錄。</div>`
+            : report.trade_history
+                .map((trade) => `
+                  <div class="bg-gray-900 border border-gray-700 rounded-lg p-3">
+                    Day ${trade.day} ｜ ${trade.action === "buy" ? "買入" : "賣出"}
+                    ${trade.amount} 股 ｜ 價格 ${format_number(trade.price)}
+                    ｜ 現金 ${format_number(trade.cash)} ｜ 持股 ${trade.stock}
+                  </div>
+                `)
+                .join("");
+
+        document.getElementById("final-report").classList.remove("hidden");
+        document.getElementById("final-report").scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
       }
 
       function render_chart(data) {
